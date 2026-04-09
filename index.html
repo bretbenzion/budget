@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Budget">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" id="pwa-manifest">
+<link rel="manifest" href="manifest.json">
 <title>Budget</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -975,39 +975,12 @@ function setupClearBtn() {
   });
 }
 
-// ─── PWA: inject manifest & register service worker ──────────────────────────
-(function setupPWA() {
-  // Inline manifest via blob so it works from any origin including GitHub Pages
-  const manifest = {
-    name: 'Budget',
-    short_name: 'Budget',
-    description: 'Personal monthly budget tracker',
-    start_url: '.',
-    display: 'standalone',
-    background_color: '#f5f2ee',
-    theme_color: '#f5f2ee',
-    orientation: 'portrait-primary',
-    icons: [
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%232d5a3d'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle' font-family='serif' fill='white'%3E$%3C/text%3E%3C/svg%3E",
-        sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable'
-      },
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%232d5a3d'/%3E%3Ctext x='256' y='350' font-size='300' text-anchor='middle' font-family='serif' fill='white'%3E$%3C/text%3E%3C/svg%3E",
-        sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable'
-      }
-    ]
-  };
-  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  document.getElementById('pwa-manifest').href = url;
-
-  // Service worker for offline support
-  if ('serviceWorker' in navigator) {
-    const swCode = `
+// ─── PWA: register service worker ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
 const CACHE = 'budget-v1';
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])).catch(()=>{}));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./index.html', './manifest.json'])).catch(()=>{}));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -1017,11 +990,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./index.html'))));
 });`;
-    const swBlob = new Blob([swCode], {type:'application/javascript'});
-    const swUrl = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swUrl, {scope: './'}).catch(()=>{});
-  }
-})();
+  const swBlob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl, {scope: './'}).catch(()=>{});
+}
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
